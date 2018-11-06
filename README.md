@@ -1,10 +1,16 @@
 # Chinese translationese 
 
-Hai Hu, forked and modifed from https://github.com/lutzky/translationese
+Author: Hai Hu (huhai at indiana.edu), forked and modifed from https://github.com/lutzky/translationese
+
+Original authors: Ohad Lutzky, Gal Star
 
 Documentation of the original implementation is available here: https://translationese.readthedocs.org/
 
-## Modifications
+## About 
+
+This is part of a project on the features of translated text. That is, what makes translations different from text written originlly in the same language. The code here extracts features of translations for downstream text classification tasks. The original implementation is for English, replicating results in this [paper](https://academic.oup.com/dsh/article/30/1/98/350113). The code here handles Chinese. The results are in a recently submitted paper (contact Hai Hu to get a draft version). To take a look at a similar study on Chinese translations, see our previous [paper](http://www.aclweb.org/anthology/W18-1603).
+
+## New features
 
 1. Use Stanford CoreNLP instead of NLTK. CoreNLP is more accurate and also allows you to easily extend to other languages. You need to install and fire up a [CoreNLP server](https://stanfordnlp.github.io/CoreNLP/corenlp-server.html) locally and then process text data. You will also need a python wrapper for CoreNLP which is already in this folder. It is a modification of the wrapper from [here](https://github.com/Lynten/stanford-corenlp).
 
@@ -24,7 +30,7 @@ The original code by Lutzky and Star have suffix `_old`.
 python3 analyze.py pos_n_grams:0 -d myoutput/ -o o/ -t t/
 ```
 
-This will process the original texts in the directory *o* and the translated texts in *t*, and save the output in the directory *myoutput*. One test text file is provided for *o* and *t*. You can then use the file *zh_pos_n_grams:0.arff* to run the classifier in (WEKA)[https://www.cs.waikato.ac.nz/ml/weka/]. 
+This will process the original texts in the directory *o* and the translated texts in *t*, and save the output in the directory *myoutput*. One test text file is provided for *o* and *t*. You can then use the file *zh_pos_n_grams:0.arff* to run the classifier in [WEKA](https://www.cs.waikato.ac.nz/ml/weka/). 
 
 Note: Test file for *o* is from [Xinhua](http://www.xinhuanet.com/politics/2018-11/05/c_1123665905.htm). Test file for *t* is from [Reference News](http://www.cankaoxiaoxi.com/china/20181103/2348120.shtml).
 
