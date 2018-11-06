@@ -35,6 +35,19 @@ def is_proper_noun(token_tag_pair):
     tag = token_tag_pair[1]
     return tag.startswith("NNP")
 
+def is_proper_noun_zh(token_tag_pair):
+    """Given a pair of a token and a tag, returns True if it represents a
+    proper noun. (for Chinese)
+
+    >>> is_proper_noun(('海尔', 'NR'))
+    True
+    >>> is_proper_noun(('电脑', 'NN'))
+    False
+    """
+
+    tag = token_tag_pair[1]
+    return tag.startswith("NR")
+
 def sparse_dict_increment(d, k):
     """Increment key ``k`` in dictionary ``d``, assuming 0 if missing.
 

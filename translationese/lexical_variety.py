@@ -22,6 +22,8 @@ class LexicalVarietyQuantifier:
         self.num_tokens = len(analysis.tokens())
         self.num_types = len(analysis.tokens_set())
         self.num_unique_tokens = len(self.unique_tokens())
+        # print('numtokens: {}, numtypes: {}, numuniquetokens: {}'.\
+        #       format(self.num_tokens, self.num_types, self.num_unique_tokens))
 
     def type_token_ratio(self):
         """Returns 6 times the type token ratio (as defined in the

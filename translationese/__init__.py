@@ -1,6 +1,7 @@
 import memoize
 import math
-import os
+import os, re
+import sys
 from translationese.utils import flatten_list, sparse_dict_increment
 
 if os.environ.get("READTHEDOCS", None) != 'True':
@@ -20,7 +21,11 @@ class Analysis(object):
     appended to its name. Consequent analyses will load cached data.
     """
 
-    def __init__(self, fulltext=None, stream=None, filename=None):
+    def __init__(self, fulltext=None, stream=None, filename=None, stanfordnlp=None, lang=None):
+        self.stanfordnlp = stanfordnlp
+        self.pat = re.compile('[A-z]')
+        self.lang = lang  # to use for function words
+
         self.filename = None
         if fulltext:
             self.fulltext = fulltext
@@ -54,7 +59,8 @@ class Analysis(object):
 
     @memoize.memoize
     def sentences(self):
-        return nltk.sent_tokenize(self.fulltext)
+        # return nltk.sent_tokenize(self.fulltext.decode('utf-8'))
+        return self.stanfordnlp.ssplit(self.fulltext)
 
     @memoize.memoize
     def case_tokens(self):
@@ -63,8 +69,17 @@ class Analysis(object):
         # in the NLTK API doc to only word_tokenize single sentences.
         tokens = []
 
-        for sentence in self.sentences():
-            tokens += nltk.word_tokenize(sentence)
+        if self.lang == 'en':
+            for sentence in self.sentences():
+                # tokens += nltk.word_tokenize(sentence) # old: NLTK
+                # now: CoreNLP for English
+                tokens += self.stanfordnlp.word_tokenize(sentence)
+        elif self.lang == 'zh':
+            for sentence in self.sentences():
+                # now: CoreNLP for Chinese
+                tokenstmp = self.stanfordnlp.word_tokenize(sentence)
+                tokens += [token for token in tokenstmp \
+                           if not self.pat.search(token)]  # no English letters allowed
 
         return tokens
 
@@ -79,7 +94,12 @@ class Analysis(object):
         [[('I', 'PRP'), ('am', 'VBP'), ('fine', 'NN'), ('.', '.')],
         [('How', 'WRB'), ('are', 'VBP'), ('you', 'PRP'), ('?', '.')]]
         """
-        return nltk.batch_pos_tag(self.case_tokenized_sentences())
+        # use NLTK tagger, which is very inaccurate!
+        # result = nltk.pos_tag_sents(self.case_tokenized_sentences())
+
+        # use Stanford CoreNLP tagger, either for Chinese or English.
+        result = [self.stanfordnlp.pos_tag(s) for s in self.sentences()]
+        return result
 
     @memoize.memoize
     def pos_tags(self):
@@ -99,8 +119,14 @@ class Analysis(object):
         >>> Analysis("Hello. How are you?").tokenized_sentences()
         [['hello', '.'], ['how', 'are', 'you', '?']]
         """
-        lowercase_sentences = [ s.lower() for s in self.sentences() ]
-        return [ nltk.word_tokenize(s) for s in lowercase_sentences ]
+        if self.lang == 'en':
+            lowercase_sentences = [ s.lower() for s in self.sentences() ]
+            return [ self.stanfordnlp.word_tokenize(s) for s in lowercase_sentences ]
+        elif self.lang == 'zh':
+            return [ self.stanfordnlp.word_tokenize(s) for s in self.sentences() ]
+        else:
+            print('language "{}" not implemented yet for tokenized_sentences'.format(self.lang))
+            exit()
 
     @memoize.memoize
     def case_tokenized_sentences(self):
@@ -109,7 +135,12 @@ class Analysis(object):
         >>> Analysis("Hello. How are you?").case_tokenized_sentences()
         [['Hello', '.'], ['How', 'are', 'you', '?']]
         """
-        return [ nltk.word_tokenize(s) for s in self.sentences() ]
+        # return [ nltk.word_tokenize(s) for s in self.sentences() ]
+        if self.lang in ['en', 'zh']:
+            return [ self.stanfordnlp.word_tokenize(s) for s in self.sentences() ]
+        else:
+            print('language "{}" not implemented yet for tokenized_sentences'.format(self.lang))
+            exit()
 
     @memoize.memoize
     def tokens(self):
@@ -142,6 +173,67 @@ class Analysis(object):
         items_normalized = [ (x, y / num_tokens) for x, y in items ]
         return dict(items_normalized)
 
+    @memoize.memoize
+    def constParses(self):
+        """ constituent parse trees as a list """
+        if self.lang in ['en', 'zh']:
+            return [ self.stanfordnlp.parse(s) for s in self.sentences() \
+                     if len(s.split()) < 200 ]  # don't parse the sent if too long
+        else:
+            print('language "{}" not implemented yet for constParses'.format(self.lang))
+            exit()
+
+    @memoize.memoize
+    def depParses(self):
+        """ dep parses as a list """
+        if self.lang in ['en', 'zh']:
+            return [ self.stanfordnlp.dependency_parse(s) for s in self.sentences() \
+                     if len(s.split()) < 200 ]  # don't parse the sent if too long
+        else:
+            print('language "{}" not implemented yet for depParses'.format(self.lang))
+            exit()
+
+
+    # @memoize.memoize
+    def PCFG(self):
+        """ a PCFG object """
+        import translationese.PCFG
+        pcfg = translationese.PCFG.PCFG(parseTrees=self.constParses())
+        return pcfg
+
+    @memoize.memoize
+    def CFGRs(self):
+        """ context-free grammar rules as a dictionary """
+        return self.PCFG().grm_rule
+
+    # for chinese
+    @memoize.memoize
+    def chars(self):
+        """  Chinese characters  """
+        chars = []
+
+        for sentence in self.sentences():
+            charstmp = [char for char in sentence]
+            chars += [char for char in charstmp \
+                      if not self.pat.search(char)]  # no English letters allowed
+        return chars
+
+    @memoize.memoize
+    def chars_set(self):
+        """Same as ``chars``, but as a ``set``."""
+        return set(self.chars())
+
+    @memoize.memoize
+    def chengyus(self):
+        """ all occurrences of chengyu as a list: ['五颜六色', '五颜六色', '八仙过海', ...] """
+        from translationese.chengyu_list import CHENGYUS
+        chengyus = []
+        for chengyu in CHENGYUS:
+            for sent in self.sentences():
+                n = sent.count(chengyu)
+                if n > 0: chengyus += [chengyu] * n
+        return chengyus
+
     def bigrams(self):
         """Returns a histogram of bigrams in the text.
         
@@ -172,18 +264,18 @@ class Analysis(object):
 
         return dict(bigram_pmi_pairs)
 
-import exceptions
-class MissingVariant(exceptions.Exception):
+# import exceptions
+class MissingVariant(Exception):
     """Exception thrown when no variant was specified when quantifying using
     a module that requires a variant specification."""
     pass
 
-class NoVariants(exceptions.Exception):
+class NoVariants(Exception):
     """Exception thrown when a variant was specified when quantifying using
     a module that does not support variant specification."""
     pass
 
-class NoSuchVariant(exceptions.Exception):
+class NoSuchVariant(Exception):
     """Exception thrown when an invalid variant was specified when quantifying
     using a module that supports variant specification."""
     def __init__(self):

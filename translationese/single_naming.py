@@ -7,10 +7,17 @@ the first name of this person (Guido) and probably his role, too (minister of
 foreign affairs).
 """
 
-from translationese.utils import is_proper_noun
-
 def quantify(analysis):
     """Quantify single naming."""
+
+    if analysis.lang == 'en':
+        from translationese.utils import is_proper_noun
+    elif analysis.lang == 'zh':
+        from translationese.utils import is_proper_noun_zh as is_proper_noun
+    else:
+        print('language "{}" not implemented yet for single naming'.format(analysis.lang))
+        exit()
+
     edge_marker = [('', '')]
     pos_tags = edge_marker + analysis.pos_tags() + edge_marker
     num_tags = len(pos_tags) - 2 # Remove 2 edge markers

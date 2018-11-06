@@ -9,9 +9,12 @@ import translationese
 
 punctuation_marks = [ '?', '!', ':', ';', '-', '(', ')', '[', ']',
                       "'", '"', '/', ',', '.' ]
+
+punctuation_marks_zh = ['？', '！', '：', '；', '——', '—', '（', '）', '【', '】', '‘', '’',
+                        '“', '”', '、', '，', '。', '《', '》', '……', '…']
 """Relevant punctuation marks"""
 
-VARIANTS = [0, 1, 2]
+VARIANTS = [0, 1, 2, 3]
 """Possible variants:
 
 0. The normalized frequency of each punctuation mark in the chunk.
@@ -23,10 +26,16 @@ order of 4.
 
 2. n/p, where p is the total number of punctuations in the chunk; and n as
 above. This value is magnified by an order of 4.
+
+3. dunhao in Chinese '、'
 """
 
 def count_punctuation_marks(analysis):
     """Count the amount of punctuation marks in the text of ``analysis``."""
+    global punctuation_marks, punctuation_marks_zh
+    if analysis.lang == 'zh':
+        punctuation_marks = punctuation_marks_zh
+
     histogram = dict([ (x, 0) for x in punctuation_marks ])
     count = 0
     for char in analysis.fulltext:
@@ -37,21 +46,29 @@ def count_punctuation_marks(analysis):
 
 def quantify_variant(analysis, variant):
     """Quantify punctuation marks."""
-    if not variant in [0, 1, 2]:
-        raise translationese.NoSuchVariant()
+    if variant == 3:
+        # 、 in chinese
+        return { 'dunhao' : analysis.fulltext.count('、') }
+    else:
+        global punctuation_marks, punctuation_marks_zh
+        if analysis.lang == 'zh':
+            punctuation_marks = punctuation_marks_zh
 
-    assert isinstance(analysis, translationese.Analysis)
+        if not variant in [0, 1, 2]:
+            raise translationese.NoSuchVariant()
 
-    count, histogram = count_punctuation_marks(analysis)
+        assert isinstance(analysis, translationese.Analysis)
 
-    divideby = [
-                translationese.expected_chunk_size,
-                # The following two are magnified by 4.0, as in the paper
-                len(analysis.tokens()) / 4.0,
-                float(count) / 4.0,
-                ]
+        count, histogram = count_punctuation_marks(analysis)
 
-    for char in punctuation_marks:
-        histogram[char] /= divideby[variant]
+        divideby = [
+                    translationese.expected_chunk_size,
+                    # The following two are magnified by 4.0, as in the paper
+                    len(analysis.tokens()) / 4.0,
+                    float(count) / 4.0,
+                    ]
 
-    return histogram
+        for char in punctuation_marks:
+            histogram[char] /= divideby[variant]
+
+        return histogram

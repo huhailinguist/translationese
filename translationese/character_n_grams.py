@@ -12,9 +12,9 @@ prefixes and suffixes. We do not capture cross-token character `n`-grams, and
 we exclude punctuation marks.
 """
 
-import os
+import os, re
 if os.environ.get("READTHEDOCS", None) != 'True':
-    from nltk.util import ingrams
+    from nltk.util import ngrams  # was ingrams
 from translationese.utils import sparse_dict_increment
 
 __author__ = "Ohad Lutzky"
@@ -42,7 +42,7 @@ class CharacterNGramQuantifier:
             sparse_dict_increment(self.histogram, key)
 
     def __add_token_ngrams(self, token):
-        for current_ngram in ingrams(token, self.k + 1):
+        for current_ngram in ngrams(token, self.k + 1):
             sparse_dict_increment(self.histogram, ''.join(current_ngram))
 
     def __normalize_histogram(self, analysis):
@@ -53,7 +53,7 @@ class CharacterNGramQuantifier:
     def quantify(self, analysis):
         """Quantify character `n`-grams."""
         for token in analysis.tokens():
-            if not token.isalpha(): continue
+            # if not token.isalpha(): continue
             self.__add_token_ngrams(token)
             if self.k > 0:
                 self.__add_token_edges(token)
