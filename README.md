@@ -38,3 +38,28 @@ Note: Test file for *o* is from [Xinhua](http://www.xinhuanet.com/politics/2018-
 
 See the original [documentation](https://translationese.readthedocs.org/) for more details. 
 
+## Citation
+
+If you use our code or work, please cite our paper on Chinese translationese:
+
+```
+@article{huinvestigating,
+  title={Investigating translated Chinese and its variants using machine learning},
+  author={Hu, Hai and K{\"u}bler, Sandra},
+  journal={Natural Language Engineering},
+  pages={1--34},
+  publisher={Cambridge University Press},
+  DOI={10.1017/S1351324920000182}
+}
+```
+
+Please also cite the original implementation:
+
+```
+@misc{translationese,
+     author = {Ohad Lutzky and Gal Star},
+     title = {Detecting translationese},
+     note = {Online at \url{https://github.com/lutzky/translationese}; retrieved August 2020},
+     year = {2013}
+}
+```
